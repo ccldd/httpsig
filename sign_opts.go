@@ -11,6 +11,7 @@ type SignOptions struct {
 	// If the header does not exist in the request, then it will be ignored.
 	//
 	// Add "Content-Digest" header if you want to sign the HTTP content.
+	// You can call SignBody() to do it for you.
 	components []string
 
 	signatureParameters []SignatureParameter

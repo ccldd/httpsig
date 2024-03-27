@@ -34,7 +34,10 @@ func TestHttpMessageSigner_SignRequest(t *testing.T) {
 	opts := &SignOptions{}
 	opts.WithCreated()
 	opts.WithKeyId(ECCP256TestKeyId)
-	signer := NewEcdsaSha256Signer(ECCP256TestKey, "sig1", opts)
+	signer, err := NewEcdsaP256Sha256Signer(ECCP256TestKey, "sig1", opts)
+	if err != nil {
+		panic(err)
+	}
 
 	req, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
 	if err != nil {

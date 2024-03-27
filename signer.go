@@ -2,6 +2,7 @@ package httpsig
 
 import (
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 var (
 	ErrNothingToSign = errors.New("there are nothing to sign in the http message")
+	ErrWrongCurve    = errors.New("the private key belongs in the wrong curve")
 )
 
 type Signer interface {
@@ -24,24 +26,32 @@ type HttpMessageSigner struct {
 	Opts     *SignOptions
 }
 
-func NewEcdsaSha256Signer(privateKey *ecdsa.PrivateKey, sigLabel string, opts *SignOptions) *HttpMessageSigner {
+func NewEcdsaP256Sha256Signer(privateKey *ecdsa.PrivateKey, sigLabel string, opts *SignOptions) (*HttpMessageSigner, error) {
+	if privateKey.Curve != elliptic.P256() {
+		return nil, ErrWrongCurve
+	}
+
 	return &HttpMessageSigner{
-		Alg: EcdsaSha256Algorithm{
+		Alg: EcdsaP256Sha256Algorithm{
 			privateKey: privateKey,
 		},
 		SigLabel: sigLabel,
 		Opts:     opts,
-	}
+	}, nil
 }
 
-func NewEcdsaSha384Signer(privateKey *ecdsa.PrivateKey, sigLabel string, opts *SignOptions) *HttpMessageSigner {
+func NewEcdsaP384Sha384Signer(privateKey *ecdsa.PrivateKey, sigLabel string, opts *SignOptions) (*HttpMessageSigner, error) {
+	if privateKey.Curve != elliptic.P384() {
+		return nil, ErrWrongCurve
+	}
+
 	return &HttpMessageSigner{
-		Alg: EcdsaSha384Algorithm{
+		Alg: EcdsaP384Sha384Algorithm{
 			privateKey: privateKey,
 		},
 		SigLabel: sigLabel,
 		Opts:     opts,
-	}
+	}, nil
 }
 
 func (s *HttpMessageSigner) SignRequest(req *http.Request) error {

@@ -26,15 +26,15 @@ type VerifyingAlgorithm interface {
 	Verify(b []byte) error
 }
 
-type EcdsaSha256Algorithm struct {
+type EcdsaP256Sha256Algorithm struct {
 	privateKey *ecdsa.PrivateKey
 }
 
-func (alg EcdsaSha256Algorithm) Name() string {
+func (alg EcdsaP256Sha256Algorithm) Name() string {
 	return "ecdsa-p256-sha256"
 }
 
-func (alg EcdsaSha256Algorithm) Sign(b []byte) ([]byte, error) {
+func (alg EcdsaP256Sha256Algorithm) Sign(b []byte) ([]byte, error) {
 	digest := sha256.Sum256(b)
 	signed, err := ecdsa.SignASN1(rand.Reader, alg.privateKey, digest[:])
 	if err != nil {
@@ -44,15 +44,15 @@ func (alg EcdsaSha256Algorithm) Sign(b []byte) ([]byte, error) {
 	return signed, nil
 }
 
-type EcdsaSha384Algorithm struct {
+type EcdsaP384Sha384Algorithm struct {
 	privateKey *ecdsa.PrivateKey
 }
 
-func (alg EcdsaSha384Algorithm) Name() string {
+func (alg EcdsaP384Sha384Algorithm) Name() string {
 	return "ecdsa-p384-sha384"
 }
 
-func (alg EcdsaSha384Algorithm) Sign(b []byte) ([]byte, error) {
+func (alg EcdsaP384Sha384Algorithm) Sign(b []byte) ([]byte, error) {
 	digest := sha3.Sum384(b)
 	signed, err := ecdsa.SignASN1(rand.Reader, alg.privateKey, digest[:])
 	if err != nil {
