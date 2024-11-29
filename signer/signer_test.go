@@ -1,4 +1,4 @@
-package httpsig
+package signer_test
 
 import (
 	"crypto/ecdsa"
@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/ccldd/httpsig"
+	"github.com/ccldd/httpsig/signer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,16 +33,12 @@ func init() {
 }
 
 func TestHttpMessageSigner_SignRequest(t *testing.T) {
-	opts := &SignOptions{}
-	opts.WithCreated()
-	opts.WithKeyId(ECCP256TestKeyId)
-	signer := NewEcdsaSha256Signer(ECCP256TestKey, "sig1", opts)
+	signer, err := signer.NewEcdsaSha256(ECCP256TestKey, "sig1", signer.WithCreated(), signer.WithKeyId(ECCP256TestKeyId))
+	assert.NoError(t, err)
 
 	req, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	signer.SignRequest(req)
 
-	assert.NotEmpty(t, req.Header.Get(HeaderSignature))
+	assert.NotEmpty(t, req.Header.Get(httpsig.HeaderSignature))
 }

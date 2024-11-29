@@ -1,6 +1,6 @@
 module github.com/ccldd/httpsig
 
-go 1.22.0
+go 1.23
 
 require (
 	github.com/dunglas/httpsfv v1.0.2

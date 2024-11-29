@@ -15,7 +15,7 @@ type HttpMessage interface {
 }
 
 type HttpRequest struct {
-	*http.Request
+	Request *http.Request
 }
 
 func (hr *HttpRequest) Url() *url.URL {
