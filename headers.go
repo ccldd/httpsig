@@ -2,6 +2,7 @@ package httpsig
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/dunglas/httpsfv"
 )
@@ -13,16 +14,29 @@ const (
 	HeaderSignatureInput = "Signature-Input"
 )
 
-func SignatureHeaderValue(sigLabel string, signature []byte) (string, error) {
+type SignatureHeaderValue httpsfv.Dictionary
+
+func NewSignatureHeaderValue(sigLabel string, signature []byte) SignatureHeaderValue {
 	d := httpsfv.NewDictionary()
 	d.Add(sigLabel, httpsfv.NewItem(signature))
+	sig := SignatureHeaderValue(*d)
+	return sig
+}
 
-	v, err := httpsfv.Marshal(d)
+func ParseSignatureHeaderValue(s string) (sig SignatureHeaderValue, err error) {
+	d, err := httpsfv.UnmarshalDictionary([]string{s})
 	if err != nil {
-		return "", err
+		return
 	}
 
-	return v, nil
+	sig = SignatureHeaderValue(*d)
+	return
+}
+
+func (sig SignatureHeaderValue) Marshal() (s string, err error) {
+	d := httpsfv.Dictionary(sig)
+	s, err = httpsfv.Marshal(&d)
+	return
 }
 
 // signatureInput is a Dictionary Structured Field containing
@@ -34,32 +48,130 @@ func SignatureHeaderValue(sigLabel string, signature []byte) (string, error) {
 // The value is very similar to the value of @signature-params but the component list
 // has a key which is the label for the signature.
 //
+// Example:
+//
+//	Signature-Input: sig1=("@method" "@target-uri" "@authority" \
+//	  "content-digest" "cache-control");\
+//	  created=1618884475;keyid="test-key-rsa-pss"
+//
 // https://datatracker.ietf.org/doc/html/rfc9421#name-the-signature-input-http-fi
 type SignatureInput httpsfv.Dictionary
+
+func ParseSignatureInput(s string) (sigInput SignatureInput, err error) {
+	d, err := httpsfv.UnmarshalDictionary([]string{s})
+	if err != nil {
+		return
+	}
+
+	sigInput = SignatureInput(*d)
+	return
+}
 
 func (si SignatureInput) Marshal() (string, error) {
 	d := httpsfv.Dictionary(si)
 	return httpsfv.Marshal(&d)
 }
 
+func (si SignatureInput) GetStringValue(key string) (val string, found bool) {
+	d := httpsfv.Dictionary(si)
+	var m httpsfv.Member
+	m, found = d.Get(key)
+	if !found {
+		return
+	}
+
+	val, _ = httpsfv.Marshal(m)
+	return
+}
+
+func (si SignatureInput) SigLabel() string {
+	d := httpsfv.Dictionary(si)
+	if len(d.Names()) < 1 {
+		return ""
+	}
+
+	sigLabel := d.Names()[0]
+	return sigLabel
+}
+
+func (si SignatureInput) SignatureParameters() []SignatureParameter {
+	params := make([]SignatureParameter, 0)
+
+	d := httpsfv.Dictionary(si)
+	m, found := d.Get(si.SigLabel())
+	if !found {
+		return params
+	}
+
+	innerList, ok := m.(httpsfv.InnerList)
+	if !ok {
+		return params
+	}
+
+	for _, k := range innerList.Params.Names() {
+		val, _ := innerList.Params.Get(k)
+		switch k {
+		case SignatureParameterCreated:
+			v, ok := val.(int64)
+			if ok {
+				params = append(params, Created{Time: time.Unix(v, 0)})
+			}
+		case SignatureParameterExpires:
+		case SignatureParameterNonce:
+		case SignatureParameterAlg:
+		case SignatureParameterKeyId:
+		case SignatureParameterTag:
+		}
+	}
+
+	return params
+}
+
+func (si SignatureInput) Alg() (string, bool) {
+	return si.GetStringValue(SignatureParameterAlg)
+}
+
+func (si SignatureInput) Created() (string, bool) {
+	return si.GetStringValue(SignatureParameterCreated)
+}
+
+func (si SignatureInput) Expires() (string, bool) {
+	return si.GetStringValue(SignatureParameterExpires)
+}
+
+func (si SignatureInput) KeyId() (string, bool) {
+	return si.GetStringValue(SignatureParameterKeyId)
+}
+
+func (si SignatureInput) Nonce() (string, bool) {
+	return si.GetStringValue(SignatureParameterNonce)
+}
+
+func (si SignatureInput) Tag() (string, bool) {
+	return si.GetStringValue(SignatureParameterTag)
+}
+
 func SignatureInputFromSignatureParams(sigLabel string, sp *SignatureParams) *SignatureInput {
 	dict := httpsfv.NewDictionary()
 
-	components := httpsfv.InnerList{
-		Items: make([]httpsfv.Item, len(sp.Components.Items)),
+	innerList := httpsfv.InnerList{
+		Items:  make([]httpsfv.Item, len(sp.Components.Items)),
+		Params: httpsfv.NewParams(),
 	}
 
-	for i, item := range components.Items {
+	for i, item := range innerList.Items {
 		clonedVal := reflect.ValueOf(item.Value)
-		components.Items[i] = httpsfv.Item{Value: clonedVal}
+		innerList.Items[i] = httpsfv.Item{Value: clonedVal}
 	}
 
-	dict.Add(sigLabel, components)
 	for _, name := range sp.Components.Params.Names() {
 		if v, ok := sp.Components.Params.Get(name); ok {
-			dict.Add(name, httpsfv.NewItem(v))
+			innerList.Params.Add(name, httpsfv.NewItem(v))
 		}
 	}
+
+	dict.Add(sigLabel, innerList)
+
 	si := SignatureInput(*dict)
 	return &si
 }

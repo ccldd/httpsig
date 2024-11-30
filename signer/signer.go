@@ -81,11 +81,12 @@ func (s *HttpMessageSigner) SignRequest(req *http.Request) error {
 	}
 
 	// Add signature to headers
-	signatureHeaderValue, err := httpsig.SignatureHeaderValue(s.sigLabel, signatureBytes)
+	signatureHeaderValue := httpsig.NewSignatureHeaderValue(s.sigLabel, signatureBytes)
+	signatureHeaderValueStr, err := signatureHeaderValue.Marshal()
 	if err != nil {
 		return fmt.Errorf("HttpMessageSigner.SignRequest error adding %s: %w", strconv.Quote(httpsig.HeaderSignature), err)
 	}
-	msg.Header().Add(httpsig.HeaderSignature, signatureHeaderValue)
+	msg.Header().Add(httpsig.HeaderSignature, signatureHeaderValueStr)
 
 	// Add Signature-Input to headers
 	signatureInput := httpsig.SignatureInputFromSignatureParams(s.sigLabel, &sb.SignatureParams)

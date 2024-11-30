@@ -8,7 +8,7 @@ import (
 
 type Option func(*HttpMessageSigner)
 
-func WithComponent(component string) Option {
+func withComponent(component string) Option {
 	return func(hms *HttpMessageSigner) {
 		for i, v := range hms.components {
 			if v == component {
@@ -21,39 +21,39 @@ func WithComponent(component string) Option {
 }
 
 func WithAuthority() Option {
-	return WithComponent(httpsig.DerivedComponentAuthority)
+	return withComponent(httpsig.DerivedComponentAuthority)
 }
 
 func WithMethod() Option {
-	return WithComponent(httpsig.DerivedComponentMethod)
+	return withComponent(httpsig.DerivedComponentMethod)
 }
 
 func WithPath() Option {
-	return WithComponent(httpsig.DerivedComponentPath)
+	return withComponent(httpsig.DerivedComponentPath)
 }
 
 func WithQuery() Option {
-	return WithComponent(httpsig.DerivedComponentQuery)
+	return withComponent(httpsig.DerivedComponentQuery)
 }
 
 func WithQueryParam() Option {
-	return WithComponent(httpsig.DerivedComponentQueryParam)
+	return withComponent(httpsig.DerivedComponentQueryParam)
 }
 
 func WithRequestTarget() Option {
-	return WithComponent(httpsig.DerivedComponentRequestTarget)
+	return withComponent(httpsig.DerivedComponentRequestTarget)
 }
 
 func WithScheme() Option {
-	return WithComponent(httpsig.DerivedComponentScheme)
+	return withComponent(httpsig.DerivedComponentScheme)
 }
 
 func WithStatus() Option {
-	return WithComponent(httpsig.DerivedComponentStatus)
+	return withComponent(httpsig.DerivedComponentStatus)
 }
 
 func WithTargetUri() Option {
-	return WithComponent(httpsig.DerivedComponentTargetUri)
+	return withComponent(httpsig.DerivedComponentTargetUri)
 }
 
 // WithHeaders adds headers (canonicalized) to the components
@@ -61,7 +61,7 @@ func WithHeaders(headers ...string) Option {
 	return func(hms *HttpMessageSigner) {
 		for _, h := range headers {
 			canonicalized := http.CanonicalHeaderKey(h)
-			WithComponent(canonicalized)(hms)
+			withComponent(canonicalized)(hms)
 		}
 	}
 }

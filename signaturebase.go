@@ -68,13 +68,19 @@ func NewSignatureBaseFromRequest(msg HttpMessage, components []string, sigParams
 			return nil, fmt.Errorf("duplicate component: %s", componentName)
 		}
 
-		if val, err := GetComponentValue(componentName, msg); err != nil {
-			return &sb, err
-		} else {
-			sb.Keys = append(sb.Keys, componentName)
-			sb.Lines[componentName] = val
-			sb.SignatureParams.Components.Items = append(sb.SignatureParams.Components.Items, httpsfv.NewItem(componentName))
+		val, err := GetComponentValue(componentName, msg)
+		if err != nil {
+			if isDerivedComponent(componentName) {
+				return &sb, err
+			}
+
+			// a missing header is fine
+			continue
 		}
+
+		sb.Keys = append(sb.Keys, componentName)
+		sb.Lines[componentName] = val
+		sb.SignatureParams.Components.Items = append(sb.SignatureParams.Components.Items, httpsfv.NewItem(componentName))
 	}
 
 	// Signature Parameters

@@ -52,7 +52,7 @@ func GetComponentValue(name string, msg HttpMessage) (string, error) {
 	var err error
 	val := ""
 
-	if strings.HasPrefix("@", name) {
+	if isDerivedComponent(name) {
 		switch {
 		case name == DerivedComponentMethod:
 			val, err = msg.Method(), nil
@@ -76,10 +76,12 @@ func GetComponentValue(name string, msg HttpMessage) (string, error) {
 				val, err = strconv.Itoa(msg.Status()), nil
 			}
 		default:
-			return "", fmt.Errorf("unknown derived component: %s", name)
+			err = fmt.Errorf("unknown derived component: %s", name)
 		}
 	} else if header := msg.Header().Get(name); header != "" {
 		val, err = header, nil
+	} else {
+		err = fmt.Errorf("header '%s' not found in the http message", name)
 	}
 
 	return val, err
@@ -122,4 +124,8 @@ func GetQueryParamComponentValue(name string, msg HttpMessage) (string, error) {
 	}
 
 	return value, nil
+}
+
+func isDerivedComponent(name string) bool {
+	return strings.HasPrefix("@", name)
 }
