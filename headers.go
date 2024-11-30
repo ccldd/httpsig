@@ -112,15 +112,29 @@ func (si SignatureInput) SignatureParameters() []SignatureParameter {
 		val, _ := innerList.Params.Get(k)
 		switch k {
 		case SignatureParameterCreated:
-			v, ok := val.(int64)
-			if ok {
+			if v, ok := val.(int64); ok {
 				params = append(params, Created{Time: time.Unix(v, 0)})
 			}
 		case SignatureParameterExpires:
+			if v, ok := val.(int64); ok {
+				params = append(params, Expires{Time: time.Unix(v, 0)})
+			}
 		case SignatureParameterNonce:
+			if v, ok := val.(string); ok {
+				params = append(params, Nonce(v))
+			}
 		case SignatureParameterAlg:
+			if v, ok := val.(string); ok {
+				params = append(params, Alg(v))
+			}
 		case SignatureParameterKeyId:
+			if v, ok := val.(string); ok {
+				params = append(params, KeyId(v))
+			}
 		case SignatureParameterTag:
+			if v, ok := val.(string); ok {
+				params = append(params, Tag(v))
+			}
 		}
 	}
 

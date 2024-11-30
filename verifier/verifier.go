@@ -3,6 +3,7 @@ package verifier
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/ccldd/httpsig"
 )
@@ -21,6 +22,9 @@ type HttpMessageVerifier struct {
 	sigLabel                   string
 	validateFirstSignature     bool
 	validateIfOnlyOneSignature bool
+
+	createdTolerance time.Duration
+	expiredTolerance time.Duration
 }
 
 func (hmv *HttpMessageVerifier) VerifyRequest(req *http.Request) (res VerifyResult, err error) {
@@ -42,8 +46,20 @@ func (hmv *HttpMessageVerifier) VerifyRequest(req *http.Request) (res VerifyResu
 		return
 	}
 
-	// Parse the signature parameters
-	httpsig.SignatureBase
+	// Parse and validate the signature parameters
+	sigParams := sigInput.SignatureParameters()
+	for _, p := range sigParams {
+		switch pp := p.(type) {
+		case httpsig.Created:
+			pp.Tolerance = hmv.createdTolerance
+		case httpsig.Expires:
+			pp.Tolerance = hmv.expiredTolerance
+		}
+
+		if err = p.Validate(); err != nil {
+			return
+		}
+	}
 
 	return
 }
