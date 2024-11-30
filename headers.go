@@ -37,8 +37,8 @@ func SignatureHeaderValue(sigLabel string, signature []byte) (string, error) {
 // https://datatracker.ietf.org/doc/html/rfc9421#name-the-signature-input-http-fi
 type SignatureInput httpsfv.Dictionary
 
-func (si *SignatureInput) Marshal() (string, error) {
-	d := httpsfv.Dictionary(*si)
+func (si SignatureInput) Marshal() (string, error) {
+	d := httpsfv.Dictionary(si)
 	return httpsfv.Marshal(&d)
 }
 

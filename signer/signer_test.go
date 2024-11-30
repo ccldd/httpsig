@@ -33,7 +33,10 @@ func init() {
 }
 
 func TestHttpMessageSigner_SignRequest(t *testing.T) {
-	signer, err := signer.NewEcdsaSha256(ECCP256TestKey, "sig1", signer.WithCreated(), signer.WithKeyId(ECCP256TestKeyId))
+	alg, err := signer.NewEcdsaSha256(ECCP256TestKey)
+	assert.NoError(t, err)
+
+	signer, err := signer.New(alg, "sig1", signer.WithCreated(), signer.WithKeyId(ECCP256TestKeyId))
 	assert.NoError(t, err)
 
 	req, err := http.NewRequest(http.MethodGet, "https://example.com", nil)

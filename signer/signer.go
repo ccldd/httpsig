@@ -1,7 +1,6 @@
 package signer
 
 import (
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"net/http"
@@ -25,7 +24,7 @@ type HttpMessageSigner struct {
 	components          []string
 	signatureParameters []httpsig.SignatureParameter
 
-	alg      httpsig.SigningAlgorithm
+	alg      SigningAlgorithm
 	sigLabel string
 }
 
@@ -48,24 +47,9 @@ func new(opts ...Option) *HttpMessageSigner {
 	return signer
 }
 
-func NewEcdsaSha256(privateKey *ecdsa.PrivateKey, sigLabel string, opts ...Option) (*HttpMessageSigner, error) {
+func New(alg SigningAlgorithm, sigLabel string, opts ...Option) (*HttpMessageSigner, error) {
 	s := new(opts...)
-	s.alg = httpsig.EcdsaSha256Algorithm{
-		PrivateKey: privateKey,
-	}
-	s.sigLabel = sigLabel
-
-	if err := s.validate(); err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
-func NewEcdsaSha384(privateKey *ecdsa.PrivateKey, sigLabel string, opts ...Option) (*HttpMessageSigner, error) {
-	s := new(opts...)
-	s.alg = httpsig.EcdsaSha384Algorithm{
-		PrivateKey: privateKey,
-	}
+	s.alg = alg
 	s.sigLabel = sigLabel
 
 	if err := s.validate(); err != nil {
@@ -76,6 +60,7 @@ func NewEcdsaSha384(privateKey *ecdsa.PrivateKey, sigLabel string, opts ...Optio
 
 func (s *HttpMessageSigner) SignRequest(req *http.Request) error {
 	msg := &httpsig.HttpRequest{Request: req}
+	errors.Join()
 
 	// Form Signature Base
 	sb, err := httpsig.NewSignatureBaseFromRequest(msg, s.components, s.signatureParameters)
