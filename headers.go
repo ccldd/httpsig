@@ -1,6 +1,7 @@
 package httpsig
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
@@ -39,6 +40,27 @@ func (sig SignatureHeaderValue) Marshal() (s string, err error) {
 	return
 }
 
+func (sig SignatureHeaderValue) Bytes() ([]byte, error) {
+	d := httpsfv.Dictionary(sig)
+	if len(d.Names()) < 1 {
+		return nil, fmt.Errorf("no sigLabel found")
+	}
+
+	sigLabel := d.Names()[0]
+	m, _ := d.Get(sigLabel)
+	item, ok := m.(httpsfv.Item)
+	if !ok {
+		return nil, fmt.Errorf("error reading signature bytes")
+	}
+
+	b, ok := item.Value.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("error reading signature bytes")
+	}
+
+	return b, nil
+}
+
 // signatureInput is a Dictionary Structured Field containing
 // the metadata for one or more message signatures generated
 // from components within the HTTP message.
@@ -72,18 +94,6 @@ func (si SignatureInput) Marshal() (string, error) {
 	return httpsfv.Marshal(&d)
 }
 
-func (si SignatureInput) GetStringValue(key string) (val string, found bool) {
-	d := httpsfv.Dictionary(si)
-	var m httpsfv.Member
-	m, found = d.Get(key)
-	if !found {
-		return
-	}
-
-	val, _ = httpsfv.Marshal(m)
-	return
-}
-
 func (si SignatureInput) SigLabel() string {
 	d := httpsfv.Dictionary(si)
 	if len(d.Names()) < 1 {
@@ -92,6 +102,29 @@ func (si SignatureInput) SigLabel() string {
 
 	sigLabel := d.Names()[0]
 	return sigLabel
+}
+
+func (si SignatureInput) Components() []string {
+	components := make([]string, 0)
+
+	d := httpsfv.Dictionary(si)
+	m, found := d.Get(si.SigLabel())
+	if !found {
+		return components
+	}
+
+	innerList, ok := m.(httpsfv.InnerList)
+	if !ok {
+		return components
+	}
+
+	for _, item := range innerList.Items {
+		if c, ok := item.Value.(string); ok {
+			components = append(components, c)
+		}
+	}
+
+	return components
 }
 
 func (si SignatureInput) SignatureParameters() []SignatureParameter {
@@ -141,30 +174,6 @@ func (si SignatureInput) SignatureParameters() []SignatureParameter {
 	return params
 }
 
-func (si SignatureInput) Alg() (string, bool) {
-	return si.GetStringValue(SignatureParameterAlg)
-}
-
-func (si SignatureInput) Created() (string, bool) {
-	return si.GetStringValue(SignatureParameterCreated)
-}
-
-func (si SignatureInput) Expires() (string, bool) {
-	return si.GetStringValue(SignatureParameterExpires)
-}
-
-func (si SignatureInput) KeyId() (string, bool) {
-	return si.GetStringValue(SignatureParameterKeyId)
-}
-
-func (si SignatureInput) Nonce() (string, bool) {
-	return si.GetStringValue(SignatureParameterNonce)
-}
-
-func (si SignatureInput) Tag() (string, bool) {
-	return si.GetStringValue(SignatureParameterTag)
-}
-
 func SignatureInputFromSignatureParams(sigLabel string, sp *SignatureParams) *SignatureInput {
 	dict := httpsfv.NewDictionary()
 
@@ -179,8 +188,8 @@ func SignatureInputFromSignatureParams(sigLabel string, sp *SignatureParams) *Si
 	}
 
 	for _, name := range sp.Components.Params.Names() {
-		if v, ok := sp.Components.Params.Get(name); ok {
-			innerList.Params.Add(name, httpsfv.NewItem(v))
+		if item, ok := sp.Components.Params.Get(name); ok {
+			innerList.Params.Add(name, item)
 		}
 	}
 

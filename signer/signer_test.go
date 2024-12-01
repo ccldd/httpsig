@@ -18,7 +18,7 @@ const (
 
 var ECCP256TestKey *ecdsa.PrivateKey
 
-func init() {
+func TestMain(m *testing.M) {
 	var err error
 
 	bytes, err := base64.StdEncoding.DecodeString("MHcCAQEEIFKbhfNZfpDsW43+0+JjUr9K+bTeuxopu653+hBaXGA7oAoGCCqGSM49AwEHoUQDQgAEqIVYZVLCrPZHGHjP17CTW0/+D9Lfw0EkjqF7xB4FivAxzic30tMM4GF+hR6Dxh71Z50VGGdldkkDXZCnTNnoXQ==")
@@ -30,18 +30,22 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	m.Run()
 }
 
 func TestHttpMessageSigner_SignRequest(t *testing.T) {
+	assert := assert.New(t)
+
 	alg, err := signer.NewEcdsaSha256(ECCP256TestKey)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	signer, err := signer.New(alg, "sig1", signer.WithCreated(), signer.WithKeyId(ECCP256TestKeyId))
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	req, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
-	assert.NoError(t, err)
+	assert.NoError(err)
 	signer.SignRequest(req)
 
-	assert.NotEmpty(t, req.Header.Get(httpsig.HeaderSignature))
+	assert.NotEmpty(req.Header.Get(httpsig.HeaderSignature))
 }

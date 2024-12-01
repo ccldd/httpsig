@@ -11,7 +11,7 @@ import (
 
 type VerifyingAlgorithm interface {
 	httpsig.Algorithm
-	Verify(hash []byte, signature []byte) bool
+	Verify(b []byte, signature []byte) bool
 }
 
 type EcdsaVerifyingAlgorithm struct {
@@ -19,7 +19,13 @@ type EcdsaVerifyingAlgorithm struct {
 	hash   hash.Hash
 }
 
-func (alg EcdsaVerifyingAlgorithm) Verify(hash []byte, signature []byte) bool {
+func (alg EcdsaVerifyingAlgorithm) Verify(b []byte, signature []byte) bool {
+	defer alg.hash.Reset()
+	if _, err := alg.hash.Write(b); err != nil {
+		return false
+	}
+
+	hash := alg.hash.Sum(nil)
 	return ecdsa.VerifyASN1(alg.pubKey, hash, signature)
 }
 
